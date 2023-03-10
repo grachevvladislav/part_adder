@@ -1,8 +1,12 @@
-import openpyxl
 import argparse
-from exceptions import NoSheet
-from openpyxl.styles import Border, Side, Alignment, Font, PatternFill
+from collections import namedtuple
+from math import ceil
 
+import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+from exceptions import NoSheet
+from MTBF_data import MTBF
 
 HEADER = [
     {'name': 'Комментарий', 'width': 30},
@@ -39,6 +43,7 @@ def configure_argument_parser():
 def get_data(sheet):
     data_counter = {}
     data_info = {}
+    Part = namedtuple('Part', 'en_name ru_name alternative_pn')
     for string in range(2, sheet.max_row):
         try:
             count = int(sheet.cell(string, 9).value)
@@ -54,7 +59,7 @@ def get_data(sheet):
         alternative_pn = sheet.cell(string, 8).value
         data_counter[pn] = data_counter.get(pn, 0) + count
         if pn not in data_info.keys():
-            data_info[pn] = [en_name, ru_name, alternative_pn]
+            data_info[pn] = Part(en_name, ru_name, alternative_pn)
     return data_counter, data_info
 
 
@@ -62,11 +67,15 @@ def edit_sheet(sheet):
     sheet.title = CURRENT_SHEET_NAME
 
 
-def create_new_sheet(file, data_counter, data_info):
+def create_new_sheet(file, data_counter, data_info, zip_data):
     # create new sheet
     if NEW_SHEET_NAME in file.sheetnames:
         file.remove(file[NEW_SHEET_NAME])
     sheet = file.create_sheet(NEW_SHEET_NAME)
+    # sheet settings
+    file.active = sheet
+    sheet.sheet_view.zoomScale = 55
+    # header
     sheet.row_dimensions[1].height = 55
     for col in sheet.iter_cols(max_col=len(HEADER), max_row=1):
         title = HEADER.pop()
@@ -99,7 +108,7 @@ def create_new_sheet(file, data_counter, data_info):
         unit = [
             *data_info[current_pn][:-1], current_pn,
             data_info[current_pn][-1], data_counter[current_pn],
-            '', ''
+            *zip_data[current_pn]
         ]
         for cell in row:
             cell.value = unit[cell.col_idx - 1]
@@ -125,6 +134,30 @@ def create_new_sheet(file, data_counter, data_info):
             )
 
 
+def exel_fun(mtbf, days, count):
+    factor = count*(1/mtbf)*days*24
+    result = ceil(factor + 1.645*pow(factor, 0.5))
+    return result
+
+
+def zip_calculation(data_counter, data_info):
+    mtbf_dict = {}
+    zip = {}
+    for keys, value in MTBF.items():
+        for key in keys:
+            mtbf_dict[key] = value
+    for pn in data_info.keys():
+        name = data_info[pn].ru_name
+        if name not in mtbf_dict.keys():
+            print(name)
+            continue
+        one_year = exel_fun(mtbf_dict[name], 365, data_counter[pn])
+        three_year = exel_fun(mtbf_dict[name], 365*3, data_counter[pn])
+        zip[pn] = (one_year, three_year)
+    return zip
+
+
+
 def main():
     args = configure_argument_parser().parse_args()
     try:
@@ -137,8 +170,8 @@ def main():
             raise NoSheet
         edit_sheet(sheet)
         data_counter, data_info = get_data(sheet)
-        create_new_sheet(file, data_counter, data_info)
-
+        zip_data = zip_calculation(data_counter, data_info)
+        create_new_sheet(file, data_counter, data_info, zip_data)
         file.save(filename=args.file)
     except FileNotFoundError:
         print(f'Файл {args.file} не найден!')
