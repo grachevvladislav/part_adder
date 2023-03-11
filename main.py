@@ -10,6 +10,7 @@ from MTBF_data import MTBF
 
 HEADER = [
     {'name': 'Комментарий', 'width': 30},
+    {'name': 'Количество в ЗИП на 3 год', 'width': 20},
     {'name': 'Количество в ЗИП на 1 год', 'width': 20},
     {'name': 'Количество в оборудовании установлено', 'width': 20},
     {'name': 'Альтернативный партномер', 'width': 20},
@@ -43,7 +44,7 @@ def configure_argument_parser():
 def get_data(sheet):
     data_counter = {}
     data_info = {}
-    Part = namedtuple('Part', 'en_name ru_name alternative_pn')
+    Part = namedtuple('Part', 'en_name ru_name alternative_pn comment')
     for string in range(2, sheet.max_row):
         try:
             count = int(sheet.cell(string, 9).value)
@@ -53,13 +54,21 @@ def get_data(sheet):
                     print(f'Ошибка колличества в строке номер {string}')
                     break
             continue
+        except ValueError:
+            print(
+                f'"{sheet.cell(string, 9).value}" - '
+                f'недопустимое значение ячейки '
+                f'{sheet.cell(string, 9).coordinate}'
+            )
+            break
         en_name = sheet.cell(string, 5).value
         ru_name = sheet.cell(string, 6).value
         pn = sheet.cell(string, 7).value
         alternative_pn = sheet.cell(string, 8).value
+        comment = sheet.cell(string, 10).value
         data_counter[pn] = data_counter.get(pn, 0) + count
         if pn not in data_info.keys():
-            data_info[pn] = Part(en_name, ru_name, alternative_pn)
+            data_info[pn] = Part(en_name, ru_name, alternative_pn, comment)
     return data_counter, data_info
 
 
@@ -73,7 +82,7 @@ def create_new_sheet(file, data_counter, data_info, zip_data):
         file.remove(file[NEW_SHEET_NAME])
     sheet = file.create_sheet(NEW_SHEET_NAME)
     # sheet settings
-    file.active = sheet
+    # file.active = sheet
     sheet.sheet_view.zoomScale = 55
     # header
     sheet.row_dimensions[1].height = 55
@@ -106,9 +115,14 @@ def create_new_sheet(file, data_counter, data_info, zip_data):
         current_pn = list(data_info.keys())[row[0].row - 2]
         sheet.row_dimensions[row[0].row].height = 35
         unit = [
-            *data_info[current_pn][:-1], current_pn,
-            data_info[current_pn][-1], data_counter[current_pn],
-            *zip_data[current_pn]
+            # en_name, ru_name, alternative_pn, comment
+            data_info[current_pn].en_name,
+            data_info[current_pn].ru_name,
+            current_pn,
+            data_info[current_pn].alternative_pn,
+            data_counter[current_pn],
+            *zip_data[current_pn],
+            data_info[current_pn].comment
         ]
         for cell in row:
             cell.value = unit[cell.col_idx - 1]
@@ -157,7 +171,6 @@ def zip_calculation(data_counter, data_info):
     return zip
 
 
-
 def main():
     args = configure_argument_parser().parse_args()
     try:
@@ -170,6 +183,7 @@ def main():
             raise NoSheet
         edit_sheet(sheet)
         data_counter, data_info = get_data(sheet)
+        print(data_info.keys())
         zip_data = zip_calculation(data_counter, data_info)
         create_new_sheet(file, data_counter, data_info, zip_data)
         file.save(filename=args.file)
@@ -177,8 +191,8 @@ def main():
         print(f'Файл {args.file} не найден!')
     except NoSheet:
         print('Лист не выбран!')
-    except IndexError:
-        print(f'В файле {args.file} нет такого листа')
+    # except IndexError:
+    #     print(f'В файле {args.file} нет такого листа')
     if sheet.max_row < 2 and sheet.max_column < 9:
         print('Неверный формат таблицы!')
         return
