@@ -8,7 +8,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from exceptions import NoSheet
 from MTBF_data import MTBF
 
-HEADER = [
+NEW_HEADER = [
     {'name': 'Комментарий', 'width': 30},
     {'name': 'Количество в ЗИП на 3 год', 'width': 20},
     {'name': 'Количество в ЗИП на 1 год', 'width': 20},
@@ -17,6 +17,11 @@ HEADER = [
     {'name': 'Партномер', 'width': 20},
     {'name': 'Наименование компоненты на русском яз', 'width': 35},
     {'name': 'Описание компоненты на англ яз', 'width': 70},
+]
+HEADER_WIDTH = [
+    NEW_HEADER[0]['width'],
+    *[val['width'] for val in NEW_HEADER[3:]],
+    20, 10, 25, 20
 ]
 CURRENT_SHEET_NAME = 'Разбивка по серверам'
 NEW_SHEET_NAME = 'Сводная таблица'
@@ -45,7 +50,15 @@ def get_data(sheet):
     data_counter = {}
     data_info = {}
     Part = namedtuple('Part', 'en_name ru_name alternative_pn comment')
+    sheet.title = CURRENT_SHEET_NAME
+    # fix style
+    sheet.row_dimensions[1].height = 55
+    sheet.sheet_view.zoomScale = 55
+    for col in sheet.iter_cols(max_col=len(NEW_HEADER), max_row=1):
+        sheet.column_dimensions[col[0].column_letter].width = HEADER_WIDTH.pop()
+
     for string in range(2, sheet.max_row):
+
         try:
             count = int(sheet.cell(string, 9).value)
         except TypeError:
@@ -72,10 +85,6 @@ def get_data(sheet):
     return data_counter, data_info
 
 
-def edit_sheet(sheet):
-    sheet.title = CURRENT_SHEET_NAME
-
-
 def create_new_sheet(file, data_counter, data_info, zip_data):
     # create new sheet
     if NEW_SHEET_NAME in file.sheetnames:
@@ -86,8 +95,8 @@ def create_new_sheet(file, data_counter, data_info, zip_data):
     sheet.sheet_view.zoomScale = 55
     # header
     sheet.row_dimensions[1].height = 55
-    for col in sheet.iter_cols(max_col=len(HEADER), max_row=1):
-        title = HEADER.pop()
+    for col in sheet.iter_cols(max_col=len(NEW_HEADER), max_row=1):
+        title = NEW_HEADER.pop()
         col[0].value = title['name']
         sheet.column_dimensions[col[0].column_letter].width = title['width']
         col[0].alignment = openpyxl.styles.Alignment(
@@ -108,7 +117,7 @@ def create_new_sheet(file, data_counter, data_info, zip_data):
         )
     # add data
     for row in sheet.iter_rows(
-            max_col=len(HEADER),
+            max_col=len(NEW_HEADER),
             min_row=2,
             max_row=len(data_info) + 1
     ):
@@ -181,9 +190,7 @@ def main():
             sheet = file[args.name]
         else:
             raise NoSheet
-        edit_sheet(sheet)
         data_counter, data_info = get_data(sheet)
-        print(data_info.keys())
         zip_data = zip_calculation(data_counter, data_info)
         create_new_sheet(file, data_counter, data_info, zip_data)
         file.save(filename=args.file)
@@ -191,8 +198,6 @@ def main():
         print(f'Файл {args.file} не найден!')
     except NoSheet:
         print('Лист не выбран!')
-    # except IndexError:
-    #     print(f'В файле {args.file} нет такого листа')
     if sheet.max_row < 2 and sheet.max_column < 9:
         print('Неверный формат таблицы!')
         return
