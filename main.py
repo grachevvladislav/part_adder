@@ -56,17 +56,50 @@ def get_data(sheet):
     sheet.sheet_view.zoomScale = 55
     for col in sheet.iter_cols(max_col=len(NEW_HEADER), max_row=1):
         sheet.column_dimensions[col[0].column_letter].width = HEADER_WIDTH.pop()
+        col[0].alignment = openpyxl.styles.Alignment(
+            wrap_text=True,
+            vertical='top',
+        )
+        col[0].font = Font(
+            name='Helvetica Neue (Headings)',
+            size=13,
+            bold=True,
+            color='FF000000'
+        )
+        col[0].border = Border(
+            left=Side(border_style='thin', color='FF000000'),
+            right=Side(border_style='thin', color='FF000000'),
+            top=Side(border_style='thin', color='FF000000'),
+            bottom=Side(border_style='thin', color='FF000000'),
+        )
 
     for string in range(2, sheet.max_row):
-
-        try:
-            count = int(sheet.cell(string, 9).value)
-        except TypeError:
+        if sheet.cell(string, 9).value == '':
             for column in range(1, sheet.max_column):
-                if sheet.cell(string, column).value is not None:
+                cell = sheet.cell(string, column)
+                if cell.value is not None:
                     print(f'Ошибка колличества в строке номер {string}')
                     break
-            continue
+                cell.font = Font(
+                    name='Helvetica Neue (Headings)',
+                    size=13,
+                    color='FF000000'
+                )
+                cell.border = Border(
+                    left=Side(border_style='thin', color='FF000000'),
+                    right=Side(border_style='thin', color='FF000000'),
+                    top=Side(border_style='thin', color='FF000000'),
+                    bottom=Side(border_style='thin', color='FF000000'),
+                )
+                cell.fill = PatternFill(
+                    fill_type='solid',
+                    start_color='DCE2F1'
+                )
+        try:
+            count = sheet.cell(string, 9).value
+            if count is None:
+                continue
+            count = int(count)
         except ValueError:
             print(
                 f'"{sheet.cell(string, 9).value}" - '
@@ -124,7 +157,6 @@ def create_new_sheet(file, data_counter, data_info, zip_data):
         current_pn = list(data_info.keys())[row[0].row - 2]
         sheet.row_dimensions[row[0].row].height = 35
         unit = [
-            # en_name, ru_name, alternative_pn, comment
             data_info[current_pn].en_name,
             data_info[current_pn].ru_name,
             current_pn,
@@ -172,8 +204,8 @@ def zip_calculation(data_counter, data_info):
     for pn in data_info.keys():
         name = data_info[pn].ru_name
         if name not in mtbf_dict.keys():
-            print(name)
-            continue
+            print(f'Нет в словаре: {name}')
+            break
         one_year = exel_fun(mtbf_dict[name], 365, data_counter[pn])
         three_year = exel_fun(mtbf_dict[name], 365*3, data_counter[pn])
         zip[pn] = (one_year, three_year)
