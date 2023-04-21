@@ -28,7 +28,14 @@ NEW_SHEET_NAME = 'Сводная таблица'
 
 
 def configure_argument_parser():
-    parser = argparse.ArgumentParser(description='Калькулятор ЗИП')
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawTextHelpFormatter,
+        description=('Калькулятор сводной таблицы ЗИП.\n'
+                     'Обязательные столбцы:\n'
+                     '|  "E"  |  "F"  |  "G"  | "H"  |"I"|\n'
+                     '|EN name|RU name|PN main|PN opt|PCS|'),
+        epilog='Без параметров использует первую страницу документа.'
+    )
     parser.add_argument(
         'file',
         help='Имя файла *.xls или *.xlsx'
@@ -36,12 +43,12 @@ def configure_argument_parser():
     parser.add_argument(
         '-n',
         '--name',
-        help='Название листа в файле'
+        help='Выбор листа по имени'
     )
     parser.add_argument(
         '-i',
         '--index',
-        help='Номер листа в файле'
+        help='Выбор листа по номеру, начиная с "0"'
     )
     return parser
 
@@ -115,6 +122,7 @@ def get_data(sheet):
         data_counter[pn] = data_counter.get(pn, 0) + count
         if pn not in data_info.keys():
             data_info[pn] = Part(en_name, ru_name, alternative_pn, comment)
+    print(f'Обработано {string} строк!')
     return data_counter, data_info
 
 
@@ -221,7 +229,7 @@ def main():
         elif args.name is not None:
             sheet = file[args.name]
         else:
-            raise NoSheet
+            sheet = file.worksheets[0]
         data_counter, data_info = get_data(sheet)
         zip_data = zip_calculation(data_counter, data_info)
         create_new_sheet(file, data_counter, data_info, zip_data)
@@ -230,7 +238,7 @@ def main():
         print(f'Файл {args.file} не найден!')
     except NoSheet:
         print('Лист не выбран!')
-    if sheet.max_row < 2 and sheet.max_column < 9:
+    if sheet.max_row < 2 or sheet.max_column < 9:
         print('Неверный формат таблицы!')
         return
 
