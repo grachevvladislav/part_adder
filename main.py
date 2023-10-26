@@ -1,56 +1,15 @@
-import argparse
 from collections import namedtuple
 from math import ceil
-
+import ast
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from exceptions import NoSheet
 from MTBF_data import MTBF
 
-NEW_HEADER = [
-    {'name': 'Комментарий', 'width': 30},
-    {'name': 'Количество в ЗИП на 3 год', 'width': 20},
-    {'name': 'Количество в ЗИП на 1 год', 'width': 20},
-    {'name': 'Количество в оборудовании установлено', 'width': 20},
-    {'name': 'Альтернативный партномер', 'width': 20},
-    {'name': 'Партномер', 'width': 20},
-    {'name': 'Наименование компоненты на русском яз', 'width': 35},
-    {'name': 'Описание компоненты на англ яз', 'width': 70},
-]
-HEADER_WIDTH = [
-    NEW_HEADER[0]['width'],
-    *[val['width'] for val in NEW_HEADER[3:]],
-    20, 10, 25, 20
-]
-CURRENT_SHEET_NAME = 'Разбивка по серверам'
-NEW_SHEET_NAME = 'Сводная таблица'
-
-
-def configure_argument_parser():
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawTextHelpFormatter,
-        description=('Калькулятор сводной таблицы ЗИП.\n'
-                     'Обязательные столбцы:\n'
-                     '|  "E"  |  "F"  |  "G"  | "H"  |"I"|\n'
-                     '|EN name|RU name|PN main|PN opt|PCS|'),
-        epilog='Без параметров использует первую страницу документа.'
-    )
-    parser.add_argument(
-        'file',
-        help='Имя файла *.xls или *.xlsx'
-    )
-    parser.add_argument(
-        '-n',
-        '--name',
-        help='Выбор листа по имени'
-    )
-    parser.add_argument(
-        '-i',
-        '--index',
-        help='Выбор листа по номеру, начиная с "0"'
-    )
-    return parser
+from constants import HEADER_WIDTH, CURRENT_SHEET_NAME, NEW_SHEET_NAME, NEW_HEADER
+from argument_parser import configure_argument_parser
+from json_parser import get_json_data
 
 
 def get_data(sheet):
@@ -222,6 +181,16 @@ def zip_calculation(data_counter, data_info):
 
 def main():
     args = configure_argument_parser().parse_args()
+    if args.json:
+        try:
+            with open(args.json) as file:
+                file_contents = file.read()
+                dict_file = ast.literal_eval(file_contents)
+        except FileNotFoundError:
+            print(f'Файл {args.file} не найден!')
+        servers = get_json_data(dict_file)
+
+        return
     try:
         file = openpyxl.load_workbook(filename=args.file)
         if args.index is not None:
