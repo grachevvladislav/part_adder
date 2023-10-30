@@ -1,3 +1,6 @@
-class NoSheet(Exception):
-    """Лист не выбран."""
-    pass
+class SheetNotFound(Exception):
+    """SheetNotFound"""
+
+
+class InvalidFileFormat(Exception):
+    """InvalidFileFormat"""

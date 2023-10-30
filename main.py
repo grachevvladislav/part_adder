@@ -3,13 +3,14 @@ from math import ceil
 import ast
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils.exceptions import InvalidFileException
 
-from exceptions import NoSheet
 from MTBF_data import MTBF
 
 from constants import HEADER_WIDTH, CURRENT_SHEET_NAME, NEW_SHEET_NAME, NEW_HEADER
-from argument_parser import configure_argument_parser
+from argument_parser import configure_argument_parser, get_sheet
 from json_parser import get_json_data
+from exceptions import SheetNotFound, InvalidFileFormat
 
 
 def get_data(sheet):
@@ -183,33 +184,36 @@ def main():
     args = configure_argument_parser().parse_args()
     if args.json:
         try:
-            with open(args.json) as file:
+            with open(args.file) as file:
                 file_contents = file.read()
                 dict_file = ast.literal_eval(file_contents)
+                # servers = get_json_data(dict_file)
+
+
+
+
         except FileNotFoundError:
             print(f'Файл {args.file} не найден!')
-        servers = get_json_data(dict_file)
+        except UnicodeDecodeError:
+            print('Файл не поддерживается')
+        except SyntaxError as e:
+            print('Синтаксическая ошибка в файле')
+    else:
+        try:
+            file = openpyxl.load_workbook(filename=args.file)
+            sheet = get_sheet(args, file)
 
-        return
-    try:
-        file = openpyxl.load_workbook(filename=args.file)
-        if args.index is not None:
-            sheet = file.worksheets[int(args.index)]
-        elif args.name is not None:
-            sheet = file[args.name]
-        else:
-            sheet = file.worksheets[0]
-        data_counter, data_info = get_data(sheet)
-        zip_data = zip_calculation(data_counter, data_info)
-        create_new_sheet(file, data_counter, data_info, zip_data)
-        file.save(filename=args.file)
-    except FileNotFoundError:
-        print(f'Файл {args.file} не найден!')
-    except NoSheet:
-        print('Лист не выбран!')
-    if sheet.max_row < 2 or sheet.max_column < 9:
-        print('Неверный формат таблицы!')
-        return
+            if sheet.max_row < 2 or sheet.max_column < 9:
+                raise InvalidFileFormat('Неверный формат таблицы!')
+            data_counter, data_info = get_data(sheet)
+            zip_data = zip_calculation(data_counter, data_info)
+            create_new_sheet(file, data_counter, data_info, zip_data)
+            file.save(args.file)
+        except InvalidFileException:
+            print('Файл не поддерживается! Нужен файл .xlsx,.xlsm,.xltx,.xltm')
+        except (SheetNotFound, InvalidFileFormat) as e:
+            print(e)
+    return
 
 
 if __name__ == '__main__':

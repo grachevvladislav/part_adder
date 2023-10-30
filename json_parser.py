@@ -107,6 +107,5 @@ def get_json_data(dict_file: dict) -> list[Server]:
                                  f'{disk["media_type"]}'),
                         ru_name=name
                     ))
-        print(server)
         servers.append(server)
     return servers
