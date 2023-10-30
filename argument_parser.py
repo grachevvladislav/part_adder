@@ -28,7 +28,13 @@ def configure_argument_parser():
     parser.add_argument(
         '-j',
         '--json',
-        help='Создание конфигурации из json',
+        help='флаг для входа в режим парсинга json',
+        action='store_true'
+    )
+    parser.add_argument(
+        '-f',
+        '--force',
+        help='Принудительное создание файла Exel при парсинге json',
         action='store_true'
     )
     return parser

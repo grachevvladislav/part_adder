@@ -16,3 +16,5 @@ HEADER_WIDTH = [
 ]
 CURRENT_SHEET_NAME = 'Разбивка по серверам'
 NEW_SHEET_NAME = 'Сводная таблица'
+
+JSON_FILE_NAME = 'json_conf.xlsx'

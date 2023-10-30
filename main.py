@@ -7,10 +7,11 @@ from openpyxl.utils.exceptions import InvalidFileException
 
 from MTBF_data import MTBF
 
-from constants import HEADER_WIDTH, CURRENT_SHEET_NAME, NEW_SHEET_NAME, NEW_HEADER
+from constants import JSON_FILE_NAME, HEADER_WIDTH, CURRENT_SHEET_NAME, NEW_SHEET_NAME, NEW_HEADER
 from argument_parser import configure_argument_parser, get_sheet
 from json_parser import get_json_data
-from exceptions import SheetNotFound, InvalidFileFormat
+import os.path
+from exceptions import SheetNotFound, InvalidFileFormat, FileAlreadyExists
 
 
 def get_data(sheet):
@@ -186,18 +187,23 @@ def main():
         try:
             with open(args.file) as file:
                 file_contents = file.read()
-                dict_file = ast.literal_eval(file_contents)
-                # servers = get_json_data(dict_file)
-
-
-
-
+            if os.path.isfile(JSON_FILE_NAME) and not args.force:
+                raise FileAlreadyExists(
+                    f'Файл {JSON_FILE_NAME} уже существует. Переименуйте или '
+                    f'удалите файл.\nПринудительно создать файл: -f/--force'
+                )
+            dict_file = ast.literal_eval(file_contents)
+            servers = get_json_data(dict_file)
+            file = openpyxl.Workbook()
+            file.save(JSON_FILE_NAME)
         except FileNotFoundError:
             print(f'Файл {args.file} не найден!')
         except UnicodeDecodeError:
             print('Файл не поддерживается')
-        except SyntaxError as e:
+        except SyntaxError:
             print('Синтаксическая ошибка в файле')
+        except FileAlreadyExists as e:
+            print(e)
     else:
         try:
             file = openpyxl.load_workbook(filename=args.file)

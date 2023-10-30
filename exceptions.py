@@ -4,3 +4,7 @@ class SheetNotFound(Exception):
 
 class InvalidFileFormat(Exception):
     """InvalidFileFormat"""
+
+
+class FileAlreadyExists(Exception):
+    """FileAlreadyExists"""
