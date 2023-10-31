@@ -1,7 +1,8 @@
 from .constants import MAIN_HEADER
 from openpyxl.styles import Alignment, Border, Font, Side, PatternFill
-from .json_parser import Server
+from .data_structure import Server
 from openpyxl.worksheet.worksheet import Worksheet
+from .data_structure import ServerSet
 
 
 def set_style(cell, header: bool = False, border_only: bool = False) -> None:
@@ -39,7 +40,7 @@ def fill_line():
     pass
 
 
-def create_main_table(sheet: Worksheet, servers: list[Server]) -> None:
+def create_main_table(sheet: Worksheet, servers: ServerSet) -> None:
     # list zoom
     sheet.sheet_view.zoomScale = 55
     # header
@@ -53,19 +54,26 @@ def create_main_table(sheet: Worksheet, servers: list[Server]) -> None:
         set_style(col[0], header=True)
     # table body
     line_cursor = 2
-    for server in servers:
+    for server in servers.collection.values():
+        first_line = True
         for row, component in zip(
             sheet.iter_rows(
                 max_col=len(MAIN_HEADER),
                 min_row=line_cursor,
-                max_row=line_cursor + len(server.config)
+                max_row=line_cursor + len(server.config.keys())
             ),
             server.config.values(),
         ):
             sheet.row_dimensions[row[0].row].height = 35
             # first line information
-
-            values = [*['' for i in range(4)], *component.get_list(), '']
+            if first_line:
+                values = [
+                    'Сервер', server.model, server.quantity, server.sn,
+                    *component.get_list(), ''
+                ]
+                first_line = False
+            else:
+                values = [*['' for i in range(4)], *component.get_list(), '']
             for cell, field in zip(row, values):
                 cell.value = field
                 set_style(cell)
