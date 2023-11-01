@@ -1,19 +1,27 @@
 from tabulate import tabulate
+from .constants import SERVICE_TIME
+from .calculator import zip_function
+from .resource_data import RESOURCE
+from .exceptions import UnknownComponent
 
 
 class Component:
+    """Компонент оборудования определенного типа с указанием количества."""
     def __init__(
         self,
         en_name: str = None,
         ru_name: str = None,
         pn_main: str = None,
         pn_opt: str = None,
+        comment: str = None,
         quantity: int = 1,
     ) -> None:
+        self.zip: dict[str:int] = {}
         self.en_name: str = en_name
         self.ru_name: str = ru_name
         self.pn_main: str = pn_main
         self.pn_opt: str = pn_opt
+        self.comment: str = comment
         self.quantity: int = quantity
 
     def __str__(self) -> str:
@@ -25,7 +33,7 @@ class Component:
     def __hash__(self) -> int:
         return hash((self.ru_name, self.en_name, self.pn_main, self.pn_opt))
 
-    def get_list(self) -> list[str]:
+    def get_list(self) -> list[str|int]:
         return [
             self.en_name,
             self.ru_name,
@@ -36,6 +44,7 @@ class Component:
 
 
 class Server:
+    """Уникальный сервер."""
     def __init__(
         self, name: str = None, sn: str = None, model: str = None,
         quantity: int = 1, config: dict = None
@@ -65,12 +74,25 @@ class Server:
 
 
 class ServerSet:
+    """Набор сгруппированных серверов."""
     def __init__(self) -> None:
         self.collection: dict = {}
 
-    def add_server(self, server: Server) -> None:
-        key = hash(server)
+    def add(self, item: Server | Component) -> None:
+        key = hash(item)
         if key in self.collection.keys():
             self.collection[key].quantity += 1
         else:
-            self.collection[key] = server
+            self.collection[key] = item
+
+
+class ComponentSet(ServerSet):
+    """Набор сгруппированных компонент."""
+    def zip_calculation(self) -> None:
+        for component in self.collection.values():
+            for interval in SERVICE_TIME.items():
+                if component.ru_name not in RESOURCE.keys():
+                    raise UnknownComponent(f"Нет в словаре: {component.ru_name}")
+                component.zip[interval[0]] = zip_function(
+                    RESOURCE[component.ru_name], interval[1], component.quantity
+                )

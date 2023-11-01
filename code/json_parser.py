@@ -1,5 +1,6 @@
 import re
-from .data_structure import Server, Component, ServerSet
+
+from .data_structure import Component, ServerSet, Server
 
 
 def get_json_data(dict_file: dict) -> ServerSet:
@@ -75,5 +76,5 @@ def get_json_data(dict_file: dict) -> ServerSet:
                             ru_name=name,
                         )
                     )
-        servers.add_server(server)
+        servers.add(server)
     return servers

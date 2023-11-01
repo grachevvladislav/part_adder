@@ -8,3 +8,7 @@ class InvalidFileFormat(Exception):
 
 class FileAlreadyExists(Exception):
     """FileAlreadyExists"""
+
+
+class UnknownComponent(Exception):
+    """UnknownComponent"""
