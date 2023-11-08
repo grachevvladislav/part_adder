@@ -101,7 +101,6 @@ def create_main_table(sheet: Worksheet, servers: ServerSet) -> None:
 
 
 def create_pivot_table(file, component_set: ComponentSet):
-    # create new sheet
     if PIVOT_SHEET_NAME in file.sheetnames:
         file.remove(file[PIVOT_SHEET_NAME])
     sheet = file.create_sheet(PIVOT_SHEET_NAME)
