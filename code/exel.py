@@ -120,21 +120,7 @@ def create_pivot_table(file, component_set: ComponentSet):
         component_str.append(component.comment)
         for cell in row:
             cell.value = component_str[cell.col_idx - 1]
-            cell.alignment = Alignment(
-                wrap_text=True,
-                vertical="center",
-                horizontal="center",
-            )
-            cell.font = Font(
-                name="Helvetica Neue (Headings)", size=13, color="FF000000"
-            )
-            cell.border = Border(
-                left=Side(border_style="thin", color="FF000000"),
-                right=Side(border_style="thin", color="FF000000"),
-                top=Side(border_style="thin", color="FF000000"),
-                bottom=Side(border_style="thin", color="FF000000"),
-            )
-            cell.fill = PatternFill(fill_type="solid", start_color="DCE2F1")
+            set_style(cell)
 
 
 def get_data(sheet: Worksheet) -> ComponentSet:
