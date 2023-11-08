@@ -100,29 +100,26 @@ def create_main_table(sheet: Worksheet, servers: ServerSet) -> None:
         line_cursor += len(server.config) + 1
 
 
-def create_pivot_table(file, data_counter, data_info, zip_data):
+def create_pivot_table(file, component_set: ComponentSet):
     # create new sheet
     if PIVOT_SHEET_NAME in file.sheetnames:
         file.remove(file[PIVOT_SHEET_NAME])
     sheet = file.create_sheet(PIVOT_SHEET_NAME)
     style_header(sheet, PIVOT_HEADER)
-    # add data
-    for row in sheet.iter_rows(
-        max_col=len(PIVOT_HEADER), min_row=2, max_row=len(data_info) + 1
+    for row, component in zip(
+        sheet.iter_rows(
+            max_col=len(PIVOT_HEADER), min_row=2,
+            max_row=len(component_set.collection.keys()) + 1
+        ),
+        component_set.collection.values()
     ):
-        current_pn = list(data_info.keys())[row[0].row - 2]
         sheet.row_dimensions[row[0].row].height = 35
-        unit = [
-            data_info[current_pn].en_name,
-            data_info[current_pn].ru_name,
-            current_pn,
-            data_info[current_pn].alternative_pn,
-            data_counter[current_pn],
-            *zip_data[current_pn],
-            data_info[current_pn].comment,
-        ]
+        component_str = component.get_list()
+        for repair in component.for_repair.values():
+            component_str.append(repair)
+        component_str.append(component.comment)
         for cell in row:
-            cell.value = unit[cell.col_idx - 1]
+            cell.value = component_str[cell.col_idx - 1]
             cell.alignment = Alignment(
                 wrap_text=True,
                 vertical="center",

@@ -16,7 +16,7 @@ class Component:
         comment: str = None,
         quantity: int = 1,
     ) -> None:
-        self.zip: dict[str:int] = {}
+        self.for_repair: dict[str:int] = {}
         self.en_name: str = en_name
         self.ru_name: str = ru_name
         self.pn_main: str = pn_main
@@ -88,11 +88,11 @@ class ServerSet:
 
 class ComponentSet(ServerSet):
     """Набор сгруппированных компонент."""
-    def zip_calculation(self) -> None:
+    def repair_calculation(self) -> None:
         for component in self.collection.values():
             for interval in SERVICE_TIME.items():
                 if component.ru_name not in RESOURCE.keys():
                     raise UnknownComponent(f"Нет в словаре: {component.ru_name}")
-                component.zip[interval[0]] = zip_function(
+                component.for_repair[interval[0]] = zip_function(
                     RESOURCE[component.ru_name], interval[1], component.quantity
                 )

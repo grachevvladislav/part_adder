@@ -42,7 +42,7 @@ def main() -> None:
             if sheet.max_row < 2 or sheet.max_column < 9:
                 raise InvalidFileFormat("Неверный формат таблицы!")
             component_set = get_data(sheet)
-            component_set.zip_calculation()
+            component_set.repair_calculation()
         except InvalidFileException:
             print("Файл не поддерживается! Нужен файл .xlsx,.xlsm,.xltx,.xltm")
         except (SheetNotFound, InvalidFileFormat) as e:
