@@ -1,12 +1,12 @@
 import re
 
-from .data_structure import Component, ServerSet, Server
+from .data_structure import Component, Server, ServerSet
 
 
 def get_json_data(dict_file: dict) -> ServerSet:
     servers = ServerSet()
     for server_key, server_dict in dict_file.items():
-        server_name, server_sn = server_key.split(' ')
+        server_name, server_sn = server_key.split(" ")
         server = Server(name=server_name, sn=server_sn)
         server.add_component(
             Component(quantity=len(server_dict["fans"]), ru_name="Вентилятор")
@@ -42,9 +42,7 @@ def get_json_data(dict_file: dict) -> ServerSet:
                     )
 
         for nic_dict in server_dict["nic_information"].values():
-            if not re.match(
-                r"^0.v00|Network Controller", nic_dict["port_description"]
-            ):
+            if not re.match(r"^0.v00|Network Controller", nic_dict["port_description"]):
                 server.add_component(
                     Component(
                         ru_name="Сетевой адаптер",
@@ -54,9 +52,7 @@ def get_json_data(dict_file: dict) -> ServerSet:
 
         for array_dict in server_dict["storage"].values():
             server.add_component(
-                Component(
-                    ru_name="Дисковый контроллер", en_name=array_dict["model"]
-                )
+                Component(ru_name="Дисковый контроллер", en_name=array_dict["model"])
             )
             for disk_list in array_dict.get("logical_drives", []):
                 for disk in disk_list["physical_drives"]:
@@ -71,8 +67,7 @@ def get_json_data(dict_file: dict) -> ServerSet:
                         Component(
                             pn_opt=disk["model"],
                             en_name=(
-                                f'{disk["marketing_capacity"]} '
-                                f'{disk["media_type"]}'
+                                f'{disk["marketing_capacity"]} ' f'{disk["media_type"]}'
                             ),
                             ru_name=name,
                         )

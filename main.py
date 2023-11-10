@@ -25,7 +25,7 @@ def main() -> None:
             sheet = file.worksheets[0]
             servers = get_json_data(ast.literal_eval(file_contents))
             if servers.notification:
-                print('\n'.join(servers.notification))
+                print("\n".join(servers.notification))
             create_main_table(sheet, servers)
         except FileNotFoundError:
             print(f"Файл {args.file} не найден!")
