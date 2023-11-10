@@ -21,6 +21,12 @@ def main() -> None:
                     f"Файл {JSON_FILE_NAME} уже существует. Переименуйте или "
                     f"удалите файл.\nПринудительно создать файл: -f/--force"
                 )
+            file = openpyxl.Workbook()
+            sheet = file.worksheets[0]
+            servers = get_json_data(ast.literal_eval(file_contents))
+            if servers.notification:
+                print('\n'.join(servers.notification))
+            create_main_table(sheet, servers)
         except FileNotFoundError:
             print(f"Файл {args.file} не найден!")
         except UnicodeDecodeError:
@@ -30,10 +36,6 @@ def main() -> None:
         except FileAlreadyExists as e:
             print(e)
         else:
-            file = openpyxl.Workbook()
-            sheet = file.worksheets[0]
-            servers = get_json_data(ast.literal_eval(file_contents))
-            create_main_table(sheet, servers)
             file.save(JSON_FILE_NAME)
     else:
         try:

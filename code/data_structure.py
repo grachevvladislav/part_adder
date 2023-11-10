@@ -1,7 +1,7 @@
 from tabulate import tabulate
 from .constants import SERVICE_TIME
 from .calculator import zip_function
-from .resource_data import RESOURCE
+from .data import RESOURCE, COMPONENT_NAME
 from .exceptions import UnknownComponent
 
 
@@ -14,7 +14,7 @@ class Component:
         pn_main: str = None,
         pn_opt: str = None,
         comment: str = None,
-        quantity: int = 1,
+        quantity: int = None
     ) -> None:
         self.for_repair: dict[str:int] = {}
         self.en_name: str = en_name
@@ -22,7 +22,7 @@ class Component:
         self.pn_main: str = pn_main
         self.pn_opt: str = pn_opt
         self.comment: str = comment
-        self.quantity: int = quantity
+        self.quantity: int = quantity or 1
 
     def __str__(self) -> str:
         return (
@@ -31,7 +31,7 @@ class Component:
         )
 
     def __hash__(self) -> int:
-        return hash((self.ru_name, self.en_name, self.pn_main, self.pn_opt))
+        return hash((self.ru_name, self.en_name, self.pn_main))
 
     def get_list(self) -> list[str|int]:
         return [
@@ -47,13 +47,15 @@ class Server:
     """Уникальный сервер."""
     def __init__(
         self, name: str = None, sn: str = None, model: str = None,
-        quantity: int = 1, config: dict = None
+        quantity: int = None, config: dict = None,
+        notification: set[str] = None
     ) -> None:
         self.sn: str = sn
         self.name: str = name
         self.model: str = model
-        self.quantity: int = quantity
-        self.config: dict = config
+        self.quantity: int = quantity or 1
+        self.config: dict = config or {}
+        self.notification: set[str] = notification or set()
 
     def __str__(self) -> str:
         table = tabulate(
@@ -70,6 +72,15 @@ class Server:
         if key in self.config.keys():
             self.config[key].quantity += 1
         else:
+            if component.pn_main and not component.en_name:
+                try:
+                    component.en_name = COMPONENT_NAME[component.pn_main]
+                except KeyError:
+                    msg = (
+                        f'Не найдено название для {component.ru_name} '
+                        f'{component.pn_main}'
+                    )
+                    self.notification.add(msg)
             self.config[key] = component
 
 
@@ -77,13 +88,16 @@ class ServerSet:
     """Набор сгруппированных серверов."""
     def __init__(self) -> None:
         self.collection: dict = {}
+        self.notification: set = set()
 
     def add(self, item: Server | Component) -> None:
         key = hash(item)
         if key in self.collection.keys():
             self.collection[key].quantity += 1
+            self.collection[key].sn += f'\n{item.sn}'
         else:
             self.collection[key] = item
+            self.notification.update(item.notification)
 
 
 class ComponentSet(ServerSet):

@@ -5,8 +5,9 @@ from .data_structure import Component, ServerSet, Server
 
 def get_json_data(dict_file: dict) -> ServerSet:
     servers = ServerSet()
-    for server_name, server_dict in dict_file.items():
-        server = Server(name=server_name, config={})
+    for server_key, server_dict in dict_file.items():
+        server_name, server_sn = server_key.split(' ')
+        server = Server(name=server_name, sn=server_sn)
         server.add_component(
             Component(quantity=len(server_dict["fans"]), ru_name="Вентилятор")
         )

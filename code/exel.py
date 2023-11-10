@@ -7,33 +7,34 @@ from .data_structure import ServerSet, Component, ComponentSet
 from .exceptions import InvalidFileFormat
 
 
-def set_style(cell, header: bool = False) -> None:
+def set_style(cell, header: bool = False, blank: bool = False) -> None:
     cell.border = Border(
         left=Side(border_style="thin", color="000000"),
         right=Side(border_style="thin", color="000000"),
         top=Side(border_style="thin", color="000000"),
         bottom=Side(border_style="thin", color="000000"),
     )
+    cell.font = Font(
+        name="Helvetica Neue (Headings)", size=13, color="000000"
+    )
     if header:
         cell.alignment = Alignment(
             wrap_text=True,
             vertical="top",
         )
-        cell.font = Font(
-            name="Helvetica Neue (Headings)",
-            size=13,
-            bold=True,
-            color="000000",
-        )
         cell.fill = PatternFill(fill_type="solid", start_color="FFFFFF")
-    else:
+    elif blank:
         cell.alignment = Alignment(
             wrap_text=True,
             vertical="center",
             horizontal="center",
         )
-        cell.font = Font(
-            name="Helvetica Neue (Headings)", size=13, color="000000"
+        cell.fill = PatternFill(fill_type="solid", start_color="DA9694")
+    else:
+        cell.alignment = Alignment(
+            wrap_text=True,
+            vertical="center",
+            horizontal="center",
         )
         cell.fill = PatternFill(fill_type="solid", start_color="DCE2F1")
 
@@ -72,18 +73,31 @@ def create_main_table(sheet: Worksheet, servers: ServerSet) -> None:
             server.config.values(),
         ):
             sheet.row_dimensions[row[0].row].height = 35
-            # first line information
             if first_line:
                 values = [
                     'Сервер', server.model, server.quantity, server.sn,
-                    *component.get_list(), ''
+                    *component.get_list(), component.quantity*server.quantity,
+                    ''
                 ]
                 first_line = False
             else:
-                values = [*['' for i in range(4)], *component.get_list(), '']
+                values = [
+                    *['' for i in range(4)], *component.get_list(),
+                    component.quantity*server.quantity, ''
+                ]
             for cell, field in zip(row, values):
                 cell.value = field
-                set_style(cell)
+                if cell.column in [5, 7, 9] and not field:
+                    set_style(cell, blank=True)
+                else:
+                    set_style(cell)
+        # merge sn fields
+        sheet.merge_cells(
+            start_row=line_cursor,
+            end_row=line_cursor + len(server.config.values()) - 1,
+            start_column=4,
+            end_column=4
+        )
         # blank line
         sheet.merge_cells(
             start_row=line_cursor + len(server.config),
