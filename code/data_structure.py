@@ -98,7 +98,7 @@ class ServerSet:
         self.collection: dict = {}
         self.notification: set = set()
 
-    def add(self, item: Server | Component) -> None:
+    def add(self, item: Server) -> None:
         key = hash(item)
         if key in self.collection.keys():
             self.collection[key].quantity += 1
@@ -108,8 +108,11 @@ class ServerSet:
             self.notification.update(item.notification)
 
 
-class ComponentSet(ServerSet):
+class ComponentSet:
     """Набор сгруппированных компонент."""
+
+    def __init__(self) -> None:
+        self.collection: dict = {}
 
     def repair_calculation(self) -> None:
         for component in self.collection.values():
@@ -119,3 +122,10 @@ class ComponentSet(ServerSet):
                 component.for_repair[interval[0]] = zip_function(
                     RESOURCE[component.ru_name], interval[1], component.quantity
                 )
+
+    def add(self, item: Component) -> None:
+        key = hash(item)
+        if key in self.collection.keys():
+            self.collection[key].quantity += 1
+        else:
+            self.collection[key] = item

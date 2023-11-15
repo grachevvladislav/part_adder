@@ -24,6 +24,10 @@ def main() -> None:
             file = openpyxl.Workbook()
             sheet = file.worksheets[0]
             servers = get_json_data(ast.literal_eval(file_contents))
+            print(
+                'Обработано серверов:',
+                sum([s.quantity for s in servers.collection.values()])
+            )
             if servers.notification:
                 print("\n".join(servers.notification))
             create_main_table(sheet, servers)

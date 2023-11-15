@@ -48,12 +48,21 @@ def style_header(sheet: Worksheet, header: dict):
         set_style(col[0], header=True)
 
 
-def style_blank(sheet: Worksheet, start_line: int, length: int):
-    for col in sheet.iter_cols(min_row=start_line, max_row=start_line, max_col=10):
-        set_style(col[0], header=True)
-    sheet.merge_cells(
-        start_row=start_line, end_row=start_line, start_column=1, end_column=length
-    )
+def style_line(
+        sheet: Worksheet, start_line: int, length: int, empty: bool = False
+):
+    if empty:
+        for col in sheet.iter_cols(min_row=start_line, max_row=start_line,
+                                   max_col=length):
+            set_style(col[0], header=True)
+        sheet.merge_cells(
+            start_row=start_line, end_row=start_line, start_column=1,
+            end_column=length
+        )
+    else:
+        for col in sheet.iter_cols(min_row=start_line, max_row=start_line,
+                                   max_col=length):
+            set_style(col[0])
 
 
 def create_main_table(sheet: Worksheet, servers: ServerSet) -> None:
@@ -144,20 +153,22 @@ def get_data(sheet: Worksheet) -> ComponentSet:
     style_header(sheet, MAIN_HEADER)
 
     component_set = ComponentSet()
+    quantity = sheet.cell(2, 3).value
     for row in sheet.iter_rows(
         max_col=len(MAIN_HEADER), min_row=2, max_row=sheet.max_row
     ):
         if row[6].value is None:
-            style_blank(sheet, int(row[0].row), len(MAIN_HEADER))
+            style_line(sheet, int(row[0].row), len(MAIN_HEADER), empty=True)
+            quantity = sheet.cell(row[0].row + 1, 3).value
         else:
-            # fix color style
-            # set_style(cell)
-
-            # fix summ count
-            if sheet.cell(row[0].row, 10).value is None:
+            style_line(sheet, int(row[0].row), len(MAIN_HEADER), empty=False)
+            if sheet.cell(row[0].row, 9).value is None:
                 raise InvalidFileFormat(
                     f"Не указанно количество в {row[0].row} строке!"
                 )
+            sheet.cell(row[0].row, 10).value = (
+                    sheet.cell(row[0].row, 10).value * quantity
+            )
             component = Component(
                 en_name=sheet.cell(row[0].row, 5).value,
                 ru_name=sheet.cell(row[0].row, 6).value,
